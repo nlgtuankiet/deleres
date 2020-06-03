@@ -1,3 +1,4 @@
+include(":testapp")
 include(":gradlePlugin")
 include(":core")
 

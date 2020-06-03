@@ -22,7 +22,11 @@ class LayoutRemover : Callable<Int> {
   }
 }
 
-fun removeLayout(path: String): Int {
+fun removeLayout(
+  path: String,
+  onFoundUnused: (() -> Unit)? = null
+): Int {
+  log("scan layout in $path")
   val layoutFiles = findFileWhere(path) {
     it.extension == "xml" && it.pathWithoutName().contains("/layout")
   }
@@ -47,6 +51,7 @@ fun removeLayout(path: String): Int {
       && !allJavaAndKotlinContent.contains(dynamicRef)
     if (shouldRemove) {
       println("find unused layout ${file.path}")
+      onFoundUnused?.invoke()
       file.delete()
     }
   }

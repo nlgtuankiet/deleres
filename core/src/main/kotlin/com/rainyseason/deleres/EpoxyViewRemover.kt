@@ -23,7 +23,11 @@ class EpoxyViewRemover : Callable<Int> {
   }
 }
 
-fun removeEpoxy(path: String): Int {
+fun removeEpoxy(
+  path: String,
+  onFoundUnused: (() -> Unit)? = null
+): Int {
+  log("scan epoxy model view in $path")
   val epoxyClassNameRegex = """class (\w+)""".toRegex()
   val epoxyFiles = findFileWhere(path) {
     it.extension == "kt" && it.readText().run {
@@ -46,6 +50,7 @@ fun removeEpoxy(path: String): Int {
       && !allJavaAndKotlinContent.contains(modelStatement, true)
     if (shouldRemove) {
       log("found unused model view ${file.path}")
+      onFoundUnused?.invoke()
       file.delete()
     }
   }

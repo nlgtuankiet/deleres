@@ -16,7 +16,7 @@ class DrawableRemover : Callable<Int> {
   @Option(
     names = ["extensions"],
     required = false,
-    defaultValue = "xml,png,jpg,jpeg,webp"
+    defaultValue = removeDrawableDefaultExtensions
   )
   private lateinit var extensions: String
 
@@ -31,13 +31,19 @@ class DrawableRemover : Callable<Int> {
   }
 }
 
-private fun removeDrawable(path: String, extensions: String): Int {
+const val removeDrawableDefaultExtensions = "xml,png,jpg,jpeg,webp"
+
+fun removeDrawable(
+  path: String,
+  extensions: String,
+  onFoundUnused: (() -> Unit)? = null
+): Int {
   val extensionList = extensions.split(",").toSet()
   if (extensionList.isEmpty()) {
     return 0
   }
 
-  log("remove drawable with extension: $extensionList")
+  log("scan drawable with extension $extensionList in $path")
 
   val rootFile = if (path.isNotBlank()) {
     File(path)
@@ -71,6 +77,7 @@ private fun removeDrawable(path: String, extensions: String): Int {
       && !allJavaAndKotlinContent.contains(dynamicRefName)
     if (shouldRemove) {
       println("found unused drawable: ${file.path}")
+      onFoundUnused?.invoke()
       file.delete()
     }
   }

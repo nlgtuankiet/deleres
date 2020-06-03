@@ -97,19 +97,30 @@ class PrimitiveRemover : Callable<Int> {
  * typealias AppStyleable = R.styleable
  * typealias AppXml = R.xml
  */
-private fun removePrimitive(
-  path: String,
-  checkString: Boolean,
-  checkColor: Boolean,
-  checkStringArray: Boolean,
-  checkBool: Boolean,
-  checkDimen: Boolean,
-  checkInteger: Boolean
+fun removePrimitive(
+  path: String = "",
+  checkString: Boolean = true,
+  checkColor: Boolean = true,
+  checkStringArray: Boolean = true,
+  checkBool: Boolean = true,
+  checkDimen: Boolean = true,
+  checkInteger: Boolean = true,
+  onFoundUnused: (() -> Unit)? = null
 ): Int {
-  if (!checkString && !checkColor) {
+  val shouldSkip = listOf(
+    checkString,
+    checkColor,
+    checkStringArray,
+    checkBool,
+    checkDimen,
+    checkInteger
+  ).all { !it }
+
+  if (shouldSkip) {
     return 0
   }
-  log("scan primitive resource in $path")
+
+  log("scan primitive in $path")
   val containerFiles = findFileWhere(location = path) { file ->
     file.extension == "xml"
   }
@@ -129,6 +140,11 @@ private fun removePrimitive(
     val nameToRemove = mutableSetOf<String>()
     val containerTextContent = containerFile.readText()
     val document = Jsoup.parse(containerTextContent, "", Parser.xmlParser())
+    val onFoundName: (String) -> Unit = { name: String ->
+      log("found unused primitive $name")
+      onFoundUnused?.invoke()
+      nameToRemove.add(name)
+    }
     if (checkString) {
       checkPrimitive(
         doc = document,
@@ -136,8 +152,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppString.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (checkColor) {
       checkPrimitive(
@@ -146,8 +163,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppColor.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (checkStringArray) {
       checkPrimitive(
@@ -157,8 +175,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppArray.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (checkBool) {
       checkPrimitive(
@@ -167,8 +186,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppBool.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (checkDimen) {
       checkPrimitive(
@@ -177,8 +197,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppDimen.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (checkInteger) {
       checkPrimitive(
@@ -187,8 +208,9 @@ private fun removePrimitive(
         ignoredNames = ignoredNames,
         dynamicPrefix = "AppInteger.",
         allJavaAndKtContent = allJavaAndKtContent,
-        allXmlContent = allXmlContent
-      ) { nameToRemove.add(it) }
+        allXmlContent = allXmlContent,
+        onFoundNameToRemove = onFoundName
+      )
     }
     if (nameToRemove.isNotEmpty()) {
       val newFileContent = removeNames(content = containerTextContent, names = nameToRemove)
@@ -197,7 +219,6 @@ private fun removePrimitive(
       }
     }
   }
-
   return 0
 }
 

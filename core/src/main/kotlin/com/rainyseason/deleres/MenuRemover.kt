@@ -22,7 +22,11 @@ class MenuRemover : Callable<Int> {
   }
 }
 
-fun removeMenu(path: String): Int {
+fun removeMenu(
+  path: String,
+  onFoundUnused: (() -> Unit)? = null
+): Int {
+  log("scan menu in $path")
   val menuFiles = findFileWhere(path) {
     it.extension == "xml" && it.pathWithoutName().contains("/menu")
   }
@@ -43,6 +47,7 @@ fun removeMenu(path: String): Int {
       && !allXmlContent.contains(xmlRef)
     if (shouldRemove) {
       log("found unused menu ${menuFile.path}")
+      onFoundUnused?.invoke()
       menuFile.delete()
     }
   }
